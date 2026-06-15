@@ -20,7 +20,7 @@ jobs:
       contents: read
 
   build-project:
-    name: Build Project 🧱
+    name: Build MultiCast 🧱
     uses: ./.github/workflows/build-project.yaml
     secrets: inherit
     permissions:

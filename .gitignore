@@ -4,10 +4,14 @@
 /build_*/
 /release/
 /installer/Output/
+/out/
+/dist/
+/package/
 
 .vscode
 .idea
 .deps/
+.vs/
 
 # ignore generated files
 *.generated.*
@@ -15,3 +19,8 @@
 version.h
 cmake/.CMakeBuildNumber
 .ccache.conf
+*.tmp
+*.log
+*.user
+*.VC.db
+*.opendb

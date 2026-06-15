@@ -4,6 +4,7 @@
 #include <obs.h>
 #include <obs-frontend-api.h>
 #include <QFrame>
+#include <QLabel>
 #include <QPushButton>
 #include <QString>
 #include <QTimer>
@@ -24,15 +25,20 @@ private:
 	QVBoxLayout *mainCanvasOutputLayout = nullptr;
 	QVBoxLayout *verticalCanvasLayout = nullptr;
 	QVBoxLayout *verticalCanvasOutputLayout = nullptr;
+	QLabel *authStatusLabel = nullptr;
 	QPushButton *mainStreamButton = nullptr;
 	QPushButton *configButton = nullptr;
 	QLabel *mainPlatformIconLabel = nullptr;
 	QString mainPlatformUrl;
+	bool multicastAuthorized = false;
+	bool multicastDesktopReachable = false;
+	QString multicastAuthMessage;
 
 	QString newer_version_available;
 	time_t partnerBlockTime = 0;
 
 	QTimer videoCheckTimer;
+	QTimer authCheckTimer;
 	video_t *mainVideo = nullptr;
 	std::vector<video_t *> oldVideo;
 
@@ -49,13 +55,16 @@ private:
 	bool StartOutput(obs_data_t *settings, QPushButton *streamButton);
 
 	void outputButtonStyle(QPushButton *button);
+	void UpdateAuthState();
+	void ApplyAuthState(bool reachable, bool authorized, const QString &message);
+	bool CanUseMultiCast(QString *reason = nullptr) const;
 
 	void storeMainStreamEncoders();
 
 	void AskUpdate();
 
-	QIcon streamActiveIcon = QIcon(":/aitum/media/streaming.svg");
-	QIcon streamInactiveIcon = QIcon(":/aitum/media/stream.svg");
+	QIcon streamActiveIcon = QIcon(":/multicast/media/streaming.svg");
+	QIcon streamInactiveIcon = QIcon(":/multicast/media/stream.svg");
 
 	static void frontend_event(enum obs_frontend_event event, void *private_data);
 

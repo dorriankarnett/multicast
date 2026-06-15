@@ -28,14 +28,14 @@ private:
 	QWidget *WizardInfoFacebook(bool edit = false);
 
 	// Platform icons
-	QIcon platformIconTwitch = QIcon(":/aitum/media/twitch.png");
-	QIcon platformIconYouTube = QIcon(":/aitum/media/youtube.png");
-	QIcon platformIconKick = QIcon(":/aitum/media/kick.png");
-	QIcon platformIconTikTok = QIcon(":/aitum/media/tiktok.png");
-	QIcon platformIconTwitter = QIcon(":/aitum/media/twitter.png");
-	QIcon platformIconTrovo = QIcon(":/aitum/media/trovo.png");
-	QIcon platformIconFacebook = QIcon(":/aitum/media/facebook.png");
-	QIcon platformIconUnknown = QIcon(":/aitum/media/unknown.png");
+	QIcon platformIconTwitch = QIcon(":/multicast/media/twitch.png");
+	QIcon platformIconYouTube = QIcon(":/multicast/media/youtube.png");
+	QIcon platformIconKick = QIcon(":/multicast/media/kick.png");
+	QIcon platformIconTikTok = QIcon(":/multicast/media/tiktok.png");
+	QIcon platformIconTwitter = QIcon(":/multicast/media/twitter.png");
+	QIcon platformIconTrovo = QIcon(":/multicast/media/trovo.png");
+	QIcon platformIconFacebook = QIcon(":/multicast/media/facebook.png");
+	QIcon platformIconUnknown = QIcon(":/multicast/media/unknown.png");
 
 	obs_data_array_t *servicesData;
 

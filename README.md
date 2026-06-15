@@ -1,16 +1,44 @@
-# Aitum Multistream for OBS Studio
+# MultiCast for OBS Studio
 
-Plugin for [OBS Studio](https://github.com/obsproject/obs-studio) to add [![Aitum logo](media/aitum.png) Aitum](https://aitum.tv)
+MultiCast is a multistream plugin for OBS Studio, branded for the DKStudio ecosystem.
 
-# Build
-- In-tree build
-    - Build OBS Studio: https://obsproject.com/wiki/Install-Instructions
-    - Check out this repository to UI/frontend-plugins/aitum-multistream
-    - Add `add_subdirectory(aitum-multistream)` to UI/frontend-plugins/CMakeLists.txt
-    - Rebuild OBS Studio
-- Stand-alone build
-    - Verify that you have development files for OBS
-    - Check out this repository and run `cmake -S . -B build -DBUILD_OUT_OF_TREE=On && cmake --build build`
+This repository is a modified GPL fork of `obs-aitum-multistream`, with DKStudio branding, links, packaging changes, and local integration support for DKStudio desktop features.
 
-# Translations
-Please read [Translations](TRANSLATIONS.md)
+## Current Status
+
+- Rebranded to `MultiCast by DKStudio`
+- Windows build verified locally
+- Local auth bridge prepared for DKStudio desktop integration
+- GitHub Actions build flow kept for Windows/macOS/Linux artifacts
+
+## Build
+
+### Stand-alone build on Windows
+
+```powershell
+cmake --preset windows-x64
+cmake --build --preset windows-x64 --config RelWithDebInfo --parallel
+cmake --install build_x64 --prefix .\release\RelWithDebInfo --config RelWithDebInfo
+```
+
+Built plugin files will appear under:
+
+`release/RelWithDebInfo/multicast`
+
+### GitHub Actions
+
+For the easiest packaging flow, push this repository to GitHub and use the built-in Actions workflows.  
+The Windows workflow can produce ready-to-download build artifacts and release assets.
+
+See:
+
+- [DKSTUDIO_PLAN.md](DKSTUDIO_PLAN.md)
+- [PUSH_GUIDE.md](PUSH_GUIDE.md)
+
+## License
+
+This project remains distributed under GPL-2.0. See [LICENSE](LICENSE).
+
+## Translations
+
+Please read [TRANSLATIONS.md](TRANSLATIONS.md)

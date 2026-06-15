@@ -1,7 +1,8 @@
 # Translations
 
-If you'd like to contribute a translation for the Aitum Multistream Plugin into your language, feel free to start a PR.
+If you'd like to contribute a translation for the MultiCast plugin into your language, feel free to start a PR.
 
-We ask that the following terms are not translated however, mostly as they are "branding" for us and thus should be consistent between languages.
+We ask that the following terms are not translated, mostly because they are product branding and should stay consistent between languages.
 
-- Aitum
+- DKStudio
+- MultiCast

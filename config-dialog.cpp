@@ -52,7 +52,7 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 {
 	setMinimumWidth(983);
 	setMinimumHeight(480);
-	setWindowTitle(obs_module_text("AitumMultistreamSettings"));
+	setWindowTitle(obs_module_text("MultiCastSettings"));
 	setSizeGripEnabled(true);
 
 	const auto main_window = static_cast<QMainWindow *>(obs_frontend_get_main_window());
@@ -86,7 +86,7 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	listwidgetitem->setText(QString::fromUtf8(obs_module_text("Help")));
 
 	listwidgetitem = new QListWidgetItem(listWidget);
-	listwidgetitem->setIcon(QIcon(QString::fromUtf8(":/aitum/media/aitum.png")));
+	listwidgetitem->setIcon(QIcon(QString::fromUtf8(":/multicast/media/multicast.png")));
 	listwidgetitem->setText(QString::fromUtf8(obs_module_text("SupportButton")));
 
 	listWidget->setCurrentRow(0);
@@ -121,13 +121,13 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 								QIcon(QString::fromUtf8(":/settings/images/settings/stream.svg")));
 	generalHelpButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SettingsHelpButton")),
 							    main_window->property("defaultIcon").value<QIcon>());
-	generalSupportAitumButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SupportButton")),
-								    QIcon(QString::fromUtf8(":/aitum/media/aitum.png")));
+	generalSupportDKStudioButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SupportButton")),
+								    QIcon(QString::fromUtf8(":/multicast/media/multicast.png")));
 
 	buttonLayout->addWidget(generalMainButton, 0);
 	buttonLayout->addWidget(generalVerticalButton, 0);
 	buttonLayout->addWidget(generalHelpButton, 0);
-	buttonLayout->addWidget(generalSupportAitumButton, 0);
+	buttonLayout->addWidget(generalSupportDKStudioButton, 0);
 
 	buttonGroupBox->setLayout(buttonLayout);
 
@@ -211,8 +211,6 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	auto streaming_title = new QLabel(QString::fromUtf8(obs_module_text("MainCanvas")));
 	streaming_title->setStyleSheet(QString::fromUtf8("font-weight: bold;"));
 	streaming_title_layout->addWidget(streaming_title, 0, Qt::AlignLeft);
-	//auto guide_link = new QLabel(QString::fromUtf8("<a href=\"https://l.aitum.tv/vh-streaming-settings\">") + QString::fromUtf8(obs_module_text("ViewGuide")) + QString::fromUtf8("</a>"));
-	//guide_link->setOpenExternalLinks(true);
 
 	auto addButton = new QPushButton(QIcon(":/res/images/plus.svg"), QString::fromUtf8(obs_module_text("AddOutput")));
 	addButton->setProperty("themeID", QVariant(QString::fromUtf8("addIconSmall")));
@@ -297,8 +295,6 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	streaming_title = new QLabel(QString::fromUtf8(obs_module_text("VerticalCanvas")));
 	streaming_title->setStyleSheet(QString::fromUtf8("font-weight: bold;"));
 	streaming_title_layout->addWidget(streaming_title, 0, Qt::AlignLeft);
-	//auto guide_link = new QLabel(QString::fromUtf8("<a href=\"https://l.aitum.tv/vh-streaming-settings\">") + QString::fromUtf8(obs_module_text("ViewGuide")) + QString::fromUtf8("</a>"));
-	//guide_link->setOpenExternalLinks(true);
 	//	addButton = new QPushButton(QIcon(":/res/images/plus.svg"), QString::fromUtf8(obs_module_text("AddOutput")));
 	//	addButton->setProperty("themeID", QVariant(QString::fromUtf8("addIconSmall")));
 	// 	addButton->setProperty("class", "icon-plus");
@@ -376,7 +372,7 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	///
 	const auto version =
 		new QLabel(QString::fromUtf8(obs_module_text("Version")) + " " + QString::fromUtf8(PROJECT_VERSION) + " " +
-			   QString::fromUtf8(obs_module_text("MadeBy")) + " <a href=\"https://aitum.tv\">Aitum</a>");
+			   QString::fromUtf8(obs_module_text("MadeBy")) + " <a href=\"https://dkstudio.pro\">DKStudio</a>");
 	version->setOpenExternalLinks(true);
 	version->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
@@ -418,7 +414,7 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	connect(generalHelpButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(listWidget->count() - 2); });
 
-	connect(generalSupportAitumButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(listWidget->count() - 1); });
+	connect(generalSupportDKStudioButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(listWidget->count() - 1); });
 }
 
 OBSBasicSettings::~OBSBasicSettings()

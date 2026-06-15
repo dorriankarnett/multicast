@@ -33,15 +33,15 @@
     },
     "platformConfig": {
         "macos": {
-            "bundleId": "tv.aitum.multi"
+            "bundleId": "pro.dkstudio.multicast"
         }
     },
-    "name": "aitum-multistream",
-    "displayName": "Aitum Multistream",
+    "name": "multicast",
+    "displayName": "MultiCast by DKStudio",
     "version": "1.0.8",
-    "author": "Aitum",
-    "website": "https://aitum.tv",
-    "email": "support@aitum.tv",
+    "author": "DKStudio",
+    "website": "https://dkstudio.pro",
+    "email": "support@dkstudio.pro",
     "uuids": {
         "windowsApp": "7E8814F2-03EE-4E2E-8062-A9A184EC0618"
     }

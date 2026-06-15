@@ -3,13 +3,17 @@
 #include "obs-module.h"
 #include "version.h"
 #include <obs-frontend-api.h>
+#include <curl/curl.h>
 #include <QDesktopServices>
 #include <QGroupBox>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLabel>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <util/config-file.h>
 #include <util/platform.h>
@@ -19,8 +23,8 @@ extern "C" {
 }
 
 OBS_DECLARE_MODULE()
-OBS_MODULE_AUTHOR("Aitum");
-OBS_MODULE_USE_DEFAULT_LOCALE("aitum-multistream", "en-US")
+OBS_MODULE_AUTHOR("DKStudio");
+OBS_MODULE_USE_DEFAULT_LOCALE("multicast", "en-US")
 
 static MultistreamDock *multistream_dock = nullptr;
 
@@ -43,21 +47,13 @@ bool version_info_downloaded(void *param, struct file_download_data *file)
 
 bool obs_module_load(void)
 {
-	blog(LOG_INFO, "[Aitum-Multistream] loaded version %s", PROJECT_VERSION);
+	blog(LOG_INFO, "[MultiCast] loaded version %s", PROJECT_VERSION);
 
 	const auto main_window = static_cast<QMainWindow *>(obs_frontend_get_main_window());
 	multistream_dock = new MultistreamDock(main_window);
-	obs_frontend_add_dock_by_id("AitumMultistreamDock", obs_module_text("AitumMultistream"), multistream_dock);
+	obs_frontend_add_dock_by_id("MultiCastDock", obs_module_text("MultiCast"), multistream_dock);
 
-	std::string url = "https://api.aitum.tv/plugin/multi";
-	const char *pguid = config_get_string(obs_frontend_get_app_config(), "General", "InstallGUID");
-	if (pguid) {
-		url += "?uuid=";
-		url += pguid;
-	}
-
-	version_update_info =
-		update_info_create_single("[Aitum Multistream]", "OBS", url.c_str(), version_info_downloaded, nullptr);
+	version_update_info = nullptr;
 	return true;
 }
 
@@ -80,7 +76,7 @@ void obs_module_unload()
 
 const char *obs_module_name(void)
 {
-	return obs_module_text("AitumMultistream");
+	return obs_module_text("MultiCast");
 }
 
 void RemoveWidget(QWidget *widget);
@@ -305,6 +301,13 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	mainLayout->addWidget(scrollArea, 1);
 
+	authStatusLabel = new QLabel;
+	authStatusLabel->setWordWrap(true);
+	authStatusLabel->setTextFormat(Qt::RichText);
+	authStatusLabel->setOpenExternalLinks(true);
+	authStatusLabel->setContentsMargins(8, 8, 8, 0);
+	mainLayout->addWidget(authStatusLabel);
+
 	// Bottom Button Row
 	auto buttonRow = new QHBoxLayout;
 	buttonRow->setContentsMargins(8, 6, 8, 4);
@@ -318,7 +321,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	configButton->setFlat(true);
 	configButton->setAutoDefault(false);
 	//configButton->setSizePolicy(sp2);
-	configButton->setToolTip(QString::fromUtf8(obs_module_text("AitumMultistreamSettings")));
+	configButton->setToolTip(QString::fromUtf8(obs_module_text("MultiCastSettings")));
 	QPushButton::connect(configButton, &QPushButton::clicked, [this] {
 		if (!configDialog)
 			configDialog = new OBSBasicSettings((QMainWindow *)obs_frontend_get_main_window());
@@ -352,19 +355,18 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	auto contributeButton = new QPushButton;
 	contributeButton->setMinimumHeight(30);
 	contributeButton->setIcon(ConfigUtils::generateEmojiQIcon("❤️"));
-	contributeButton->setToolTip(QString::fromUtf8(obs_module_text("AitumMultistreamDonate")));
+	contributeButton->setToolTip(QString::fromUtf8(obs_module_text("MultiCastDonate")));
 	QPushButton::connect(contributeButton, &QPushButton::clicked,
-			     [] { QDesktopServices::openUrl(QUrl("https://aitum.tv/contribute")); });
+			     [] { QDesktopServices::openUrl(QUrl("https://dkstudio.pro/support")); });
 	buttonRow->addWidget(contributeButton);
 
-	// Aitum Button
-	auto aitumButton = new QPushButton;
-	aitumButton->setMinimumHeight(30);
-	//aitumButton->setSizePolicy(sp2);
-	aitumButton->setIcon(QIcon(":/aitum/media/aitum.png"));
-	aitumButton->setToolTip(QString::fromUtf8("https://aitum.tv"));
-	QPushButton::connect(aitumButton, &QPushButton::clicked, [] { QDesktopServices::openUrl(QUrl("https://aitum.tv")); });
-	buttonRow->addWidget(aitumButton);
+	// DKStudio Button
+	auto dkstudioButton = new QPushButton;
+	dkstudioButton->setMinimumHeight(30);
+	dkstudioButton->setIcon(QIcon(":/multicast/media/multicast.png"));
+	dkstudioButton->setToolTip(QString::fromUtf8("https://dkstudio.pro"));
+	QPushButton::connect(dkstudioButton, &QPushButton::clicked, [] { QDesktopServices::openUrl(QUrl("https://dkstudio.pro")); });
+	buttonRow->addWidget(dkstudioButton);
 
 	mainLayout->addLayout(buttonRow);
 
@@ -463,12 +465,16 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 		calldata_free(&cd);
 	});
 	videoCheckTimer.start(500);
+	connect(&authCheckTimer, &QTimer::timeout, [this] { UpdateAuthState(); });
+	authCheckTimer.start(3000);
+	UpdateAuthState();
 	LoadSettingsFile();
 }
 
 MultistreamDock::~MultistreamDock()
 {
 	videoCheckTimer.stop();
+	authCheckTimer.stop();
 	for (auto it = outputs.begin(); it != outputs.end(); it++) {
 		auto old = std::get<obs_output_t *>(*it);
 		signal_handler_t *signal = obs_output_get_signal_handler(old);
@@ -533,9 +539,9 @@ void MultistreamDock::LoadSettingsFile()
 	bfree(path);
 	if (!config) {
 		config = obs_data_create();
-		blog(LOG_WARNING, "[Aitum Multistream] No configuration file loaded");
+		blog(LOG_WARNING, "[MultiCast] No configuration file loaded");
 	} else {
-		blog(LOG_INFO, "[Aitum Multistream] Loaded configuration file");
+		blog(LOG_INFO, "[MultiCast] Loaded configuration file");
 	}
 	partnerBlockTime = obs_data_get_int(config, "partner_block");
 
@@ -560,7 +566,7 @@ void MultistreamDock::LoadSettingsFile()
 		current_config = obs_data_create();
 		obs_data_set_string(current_config, "name", profile);
 		bfree(profile);
-		blog(LOG_INFO, "[Aitum Multistream] profile not found");
+		blog(LOG_INFO, "[MultiCast] profile not found");
 		LoadSettings();
 		return;
 	}
@@ -696,7 +702,7 @@ void MultistreamDock::LoadOutput(obs_data_t *output_data, bool vertical)
 	} else {
 		connect(streamButton, &QPushButton::clicked, [this, streamButton, output_data] {
 			if (streamButton->isChecked()) {
-				blog(LOG_INFO, "[Aitum Multistream] start stream clicked '%s'",
+				blog(LOG_INFO, "[MultiCast] start stream clicked '%s'",
 				     obs_data_get_string(output_data, "name"));
 				if (!StartOutput(output_data, streamButton))
 					streamButton->setChecked(false);
@@ -713,7 +719,7 @@ void MultistreamDock::LoadOutput(obs_data_t *output_data, bool vertical)
 						stop = false;
 				}
 				if (stop) {
-					blog(LOG_INFO, "[Aitum Multistream] stop stream clicked '%s'",
+					blog(LOG_INFO, "[MultiCast] stop stream clicked '%s'",
 					     obs_data_get_string(output_data, "name"));
 					const char *name2 = obs_data_get_string(output_data, "name");
 					for (auto it = outputs.begin(); it != outputs.end(); it++) {
@@ -775,7 +781,7 @@ void MultistreamDock::SaveSettings()
 	if (!config) {
 		ensure_directory(path);
 		config = obs_data_create();
-		blog(LOG_WARNING, "[Aitum Multistream] New configuration file");
+		blog(LOG_WARNING, "[MultiCast] New configuration file");
 	}
 	obs_data_set_int(config, "partner_block", partnerBlockTime);
 	auto profiles = obs_data_get_array(config, "profiles");
@@ -812,9 +818,9 @@ void MultistreamDock::SaveSettings()
 	obs_data_release(pd);
 
 	if (obs_data_save_json_safe(config, path, "tmp", "bak")) {
-		blog(LOG_INFO, "[Aitum Multistream] Saved settings");
+		blog(LOG_INFO, "[MultiCast] Saved settings");
 	} else {
-		blog(LOG_ERROR, "[Aitum Multistream] Failed saving settings");
+		blog(LOG_ERROR, "[MultiCast] Failed saving settings");
 	}
 	obs_data_release(config);
 	bfree(path);
@@ -824,6 +830,16 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 {
 	if (!settings)
 		return false;
+
+	QString authReason;
+	if (!CanUseMultiCast(&authReason)) {
+		QMessageBox::warning(this, QString::fromUtf8(obs_module_text("MultiCast")),
+				     authReason.isEmpty() ? QString::fromUtf8("Open DKStudio and sign in to use MultiCast.")
+							 : authReason);
+		if (streamButton)
+			streamButton->setChecked(false);
+		return false;
+	}
 
 	bool warnBeforeStreamStart = config_get_bool(get_user_config(), "BasicWindow", "WarnBeforeStartingStream");
 	if (warnBeforeStreamStart && isVisible()) {
@@ -858,7 +874,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 			auto main_output = obs_frontend_get_streaming_output();
 			if (!obs_output_active(main_output)) {
 				obs_output_release(main_output);
-				blog(LOG_WARNING, "[Aitum Multistream] failed to start stream '%s' because main was not started",
+				blog(LOG_WARNING, "[MultiCast] failed to start stream '%s' because main was not started",
 				     obs_data_get_string(settings, "name"));
 				QMessageBox::warning(this, QString::fromUtf8(obs_module_text("MainOutputNotActive")),
 						     QString::fromUtf8(obs_module_text("MainOutputNotActive")));
@@ -869,7 +885,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 			obs_output_release(main_output);
 			if (!venc) {
 				blog(LOG_WARNING,
-				     "[Aitum Multistream] failed to start stream '%s' because encoder index %d was not found",
+				     "[MultiCast] failed to start stream '%s' because encoder index %d was not found",
 				     obs_data_get_string(settings, "name"), vei);
 				QMessageBox::warning(this, QString::fromUtf8(obs_module_text("MainOutputEncoderIndexNotFound")),
 						     QString::fromUtf8(obs_module_text("MainOutputEncoderIndexNotFound")));
@@ -883,7 +899,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 				obs_data_apply(s, ves);
 				obs_data_release(ves);
 			}
-			std::string video_encoder_name = "aitum_multi_video_encoder_";
+			std::string video_encoder_name = "multicast_video_encoder_";
 			video_encoder_name += name;
 			venc = obs_video_encoder_create(venc_name, video_encoder_name.c_str(), s, nullptr);
 			obs_data_release(s);
@@ -905,7 +921,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 			auto main_output = obs_frontend_get_streaming_output();
 			if (!obs_output_active(main_output)) {
 				obs_output_release(main_output);
-				blog(LOG_WARNING, "[Aitum Multistream] failed to start stream '%s' because main was not started",
+				blog(LOG_WARNING, "[MultiCast] failed to start stream '%s' because main was not started",
 				     obs_data_get_string(settings, "name"));
 				QMessageBox::warning(this, QString::fromUtf8(obs_module_text("MainOutputNotActive")),
 						     QString::fromUtf8(obs_module_text("MainOutputNotActive")));
@@ -916,7 +932,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 			obs_output_release(main_output);
 			if (!aenc) {
 				blog(LOG_WARNING,
-				     "[Aitum Multistream] failed to start stream '%s' because encoder index %d was not found",
+				     "[MultiCast] failed to start stream '%s' because encoder index %d was not found",
 				     obs_data_get_string(settings, "name"), aei);
 				QMessageBox::warning(this, QString::fromUtf8(obs_module_text("MainOutputEncoderIndexNotFound")),
 						     QString::fromUtf8(obs_module_text("MainOutputEncoderIndexNotFound")));
@@ -930,7 +946,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 				obs_data_apply(s, aes);
 				obs_data_release(aes);
 			}
-			std::string audio_encoder_name = "aitum_multi_audio_encoder_";
+			std::string audio_encoder_name = "multicast_audio_encoder_";
 			audio_encoder_name += name;
 			aenc = obs_audio_encoder_create(aenc_name, audio_encoder_name.c_str(), s,
 							obs_data_get_int(settings, "audio_track"), nullptr);
@@ -942,7 +958,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 		venc = main_output ? obs_output_get_video_encoder(main_output) : nullptr;
 		if (!venc || !obs_output_active(main_output)) {
 			obs_output_release(main_output);
-			blog(LOG_WARNING, "[Aitum Multistream] failed to start stream '%s' because main was not started",
+			blog(LOG_WARNING, "[MultiCast] failed to start stream '%s' because main was not started",
 			     obs_data_get_string(settings, "name"));
 			QMessageBox::warning(this, QString::fromUtf8(obs_module_text("MainOutputNotActive")),
 					     QString::fromUtf8(obs_module_text("MainOutputNotActive")));
@@ -978,7 +994,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 	//use_auth
 	//username
 	//password
-	std::string service_name = "aitum_multi_service_";
+	std::string service_name = "multicast_service_";
 	service_name += name;
 	auto service = obs_service_create(whip ? "whip_custom" : "rtmp_custom", service_name.c_str(), s, nullptr);
 	obs_data_release(s);
@@ -992,7 +1008,7 @@ bool MultistreamDock::StartOutput(obs_data_t *settings, QPushButton *streamButto
 			type = "ffmpeg_mpegts_muxer";
 		}
 	}
-	std::string output_name = "aitum_multi_output_";
+	std::string output_name = "multicast_output_";
 	output_name += name;
 	auto output = obs_output_create(type, output_name.c_str(), nullptr, nullptr);
 	obs_output_set_service(output, service);
@@ -1193,6 +1209,121 @@ void MultistreamDock::LoadVerticalOutputs(bool firstLoad)
 		this);
 }
 
+bool MultistreamDock::CanUseMultiCast(QString *reason) const
+{
+	if (multicastAuthorized)
+		return true;
+
+	if (reason) {
+		if (!multicastAuthMessage.trimmed().isEmpty()) {
+			*reason = multicastAuthMessage;
+		} else if (!multicastDesktopReachable) {
+			*reason = QString::fromUtf8("Launch DKStudio to unlock MultiCast.");
+		} else {
+			*reason = QString::fromUtf8("Sign in to DKStudio to unlock MultiCast.");
+		}
+	}
+
+	return false;
+}
+
+void MultistreamDock::ApplyAuthState(bool reachable, bool authorized, const QString &message)
+{
+	multicastDesktopReachable = reachable;
+	multicastAuthorized = authorized;
+	multicastAuthMessage = message;
+
+	QString labelText;
+	QString labelStyle;
+	if (authorized) {
+		labelText = QString::fromUtf8(
+			"<span style='color:#16a34a;'><strong>DKStudio connected.</strong> MultiCast is unlocked.</span>");
+		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(22,163,74,0.12);");
+	} else if (reachable) {
+		labelText = QString::fromUtf8(
+			"<span style='color:#f59e0b;'><strong>DKStudio found, login required.</strong> Sign in to unlock MultiCast.</span>");
+		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(245,158,11,0.12);");
+	} else {
+		labelText = QString::fromUtf8(
+			"<span style='color:#ef4444;'><strong>DKStudio is offline.</strong> Launch the app to use MultiCast.</span>");
+		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(239,68,68,0.12);");
+	}
+
+	authStatusLabel->setStyleSheet(labelStyle);
+	authStatusLabel->setText(labelText);
+	mainStreamButton->setEnabled(authorized);
+	if (!authorized && mainStreamButton->isChecked())
+		mainStreamButton->setChecked(false);
+	outputButtonStyle(mainStreamButton);
+
+	for (auto it = outputs.begin(); it != outputs.end(); it++) {
+		auto button = std::get<QPushButton *>(*it);
+		if (!button)
+			continue;
+		button->setEnabled(authorized);
+		if (!authorized && button->isChecked())
+			button->setChecked(false);
+		outputButtonStyle(button);
+	}
+}
+
+static size_t multicast_auth_write(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+	auto buffer = static_cast<QByteArray *>(userdata);
+	buffer->append(ptr, static_cast<qsizetype>(size * nmemb));
+	return size * nmemb;
+}
+
+void MultistreamDock::UpdateAuthState()
+{
+	QByteArray responseData;
+	CURL *curl = curl_easy_init();
+	if (!curl) {
+		ApplyAuthState(false, false, QString::fromUtf8("Failed to initialize local auth check."));
+		return;
+	}
+
+	curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:4545/api/multicast/auth-state");
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 1200L);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT_MS, 800L);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, multicast_auth_write);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &responseData);
+
+	long responseCode = 0;
+	CURLcode code = curl_easy_perform(curl);
+	if (code == CURLE_OK)
+		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &responseCode);
+	curl_easy_cleanup(curl);
+
+	if (code != CURLE_OK || responseCode < 200 || responseCode >= 300) {
+		ApplyAuthState(false, false, QString::fromUtf8("Launch DKStudio to unlock MultiCast."));
+		return;
+	}
+
+	QJsonParseError parseError;
+	QJsonDocument document = QJsonDocument::fromJson(responseData, &parseError);
+	if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+		ApplyAuthState(false, false, QString::fromUtf8("Invalid DKStudio auth response."));
+		return;
+	}
+
+	auto object = document.object();
+	bool ready = object.value("ready").toBool(false);
+	bool isLoggedIn = object.value("isLoggedIn").toBool(false);
+	QString username = object.value("username").toString().trimmed();
+
+	if (ready || isLoggedIn) {
+		QString message = username.isEmpty()
+					  ? QString::fromUtf8("DKStudio connected.")
+					  : QString::fromUtf8("DKStudio connected for %1.").arg(username);
+		ApplyAuthState(true, ready, message);
+		return;
+	}
+
+	ApplyAuthState(true, false, QString::fromUtf8("Sign in to DKStudio to unlock MultiCast."));
+}
+
 void MultistreamDock::storeMainStreamEncoders()
 {
 	if (!current_config)
@@ -1260,7 +1391,7 @@ void MultistreamDock::AskUpdate() {
 
 	QMessageBox mb(QMessageBox::Question, QString::fromUtf8(obs_frontend_get_locale_string("Updater.Title")),
 		       QString::fromUtf8(obs_frontend_get_locale_string("Updater.Text")) + " " +
-			       QString::fromUtf8(obs_module_text("AitumMultistream")) + " " + newer_version_available,
+			       QString::fromUtf8(obs_module_text("MultiCast")) + " " + newer_version_available,
 		       QMessageBox::StandardButtons(), main_window);
 	auto update = mb.addButton(QString::fromUtf8(obs_frontend_get_locale_string("Updater.UpdateNow")), QMessageBox::YesRole);
 	auto remind =
@@ -1269,15 +1400,15 @@ void MultistreamDock::AskUpdate() {
 	mb.setDefaultButton(remind);
 	mb.exec();
 	if (mb.clickedButton() == update) {
-		QDesktopServices::openUrl(QUrl(QString::fromUtf8("https://aitum.tv/download/multi/")));
+		QDesktopServices::openUrl(QUrl(QString::fromUtf8("https://dkstudio.pro/multicast/download")));
 	} else if (mb.clickedButton() == skip) {
 		if (!config)
 			config = obs_data_create();
 		obs_data_set_int(config, "skip_version", sv);
 		if (obs_data_save_json_safe(config, path, "tmp", "bak")) {
-			blog(LOG_INFO, "[Aitum Multistream] Saved settings");
+			blog(LOG_INFO, "[MultiCast] Saved settings");
 		} else {
-			blog(LOG_ERROR, "[Aitum Multistream] Failed saving settings");
+			blog(LOG_ERROR, "[MultiCast] Failed saving settings");
 		}
 	}
 	obs_data_release(config);
