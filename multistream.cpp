@@ -308,7 +308,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	// Contribute Button
 	auto contributeButton = new QPushButton;
 	contributeButton->setMinimumHeight(30);
-	contributeButton->setText(QString::fromUtf8("B"));
+	contributeButton->setText(QString::fromUtf8("BOOSTY"));
 	contributeButton->setStyleSheet(QString::fromUtf8("font-weight: 800; color: #ff7a00;"));
 	contributeButton->setToolTip(QString::fromUtf8("Boosty"));
 	QPushButton::connect(contributeButton, &QPushButton::clicked,
@@ -318,7 +318,8 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	// DKStudio Button
 	auto dkstudioButton = new QPushButton;
 	dkstudioButton->setMinimumHeight(30);
-	dkstudioButton->setIcon(QIcon(":/multicast/media/multicast.png"));
+	dkstudioButton->setText(QString::fromUtf8("TELEGRAM"));
+	dkstudioButton->setStyleSheet(QString::fromUtf8("font-weight: 700; color: #2aabee;"));
 	dkstudioButton->setToolTip(QString::fromUtf8("Telegram"));
 	QPushButton::connect(dkstudioButton, &QPushButton::clicked, [] { QDesktopServices::openUrl(QUrl("https://t.me/dkstudio_dev")); });
 	buttonRow->addWidget(dkstudioButton);
