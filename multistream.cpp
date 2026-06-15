@@ -24,7 +24,7 @@ extern "C" {
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_AUTHOR("DKStudio");
-OBS_MODULE_USE_DEFAULT_LOCALE("multicast", "en-US")
+OBS_MODULE_USE_DEFAULT_LOCALE("multicast", "ru-RU")
 
 static MultistreamDock *multistream_dock = nullptr;
 
