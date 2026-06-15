@@ -2,10 +2,6 @@
 
 MultiCast is a multistream plugin for OBS Studio, branded for the DKStudio ecosystem.
 
-## Current Status
-
-## Build
-
 ### Stand-alone build on Windows
 
 ## License
