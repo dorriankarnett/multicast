@@ -1,4 +1,4 @@
-#include "config-dialog.hpp"
+﻿#include "config-dialog.hpp"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -73,10 +73,6 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	listwidgetitem->setText(QString::fromUtf8(obs_module_text("MainCanvas")));
 
 	listwidgetitem = new QListWidgetItem(listWidget);
-	listwidgetitem->setIcon(QIcon(QString::fromUtf8(":/settings/images/settings/stream.svg")));
-	listwidgetitem->setText(QString::fromUtf8(obs_module_text("VerticalCanvas")));
-
-	listwidgetitem = new QListWidgetItem(listWidget);
 	listwidgetitem->setIcon(main_window->property("defaultIcon").value<QIcon>());
 	listwidgetitem->setText(QString::fromUtf8(obs_module_text("SetupTroubleshooter")));
 	listwidgetitem->setHidden(true);
@@ -84,10 +80,6 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	listwidgetitem = new QListWidgetItem(listWidget);
 	listwidgetitem->setIcon(main_window->property("defaultIcon").value<QIcon>());
 	listwidgetitem->setText(QString::fromUtf8(obs_module_text("Help")));
-
-	listwidgetitem = new QListWidgetItem(listWidget);
-	listwidgetitem->setIcon(QIcon(QString::fromUtf8(":/multicast/media/multicast.png")));
-	listwidgetitem->setText(QString::fromUtf8(obs_module_text("SupportButton")));
 
 	listWidget->setCurrentRow(0);
 	listWidget->setSpacing(1);
@@ -117,17 +109,11 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	generalMainButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SettingsMainOutputsButton")),
 							    QIcon(QString::fromUtf8(":/settings/images/settings/stream.svg")));
-	generalVerticalButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SettingsVerticalOutputsButton")),
-								QIcon(QString::fromUtf8(":/settings/images/settings/stream.svg")));
 	generalHelpButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SettingsHelpButton")),
 							    main_window->property("defaultIcon").value<QIcon>());
-	generalSupportDKStudioButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SupportButton")),
-								    QIcon(QString::fromUtf8(":/multicast/media/multicast.png")));
 
 	buttonLayout->addWidget(generalMainButton, 0);
-	buttonLayout->addWidget(generalVerticalButton, 0);
 	buttonLayout->addWidget(generalHelpButton, 0);
-	buttonLayout->addWidget(generalSupportDKStudioButton, 0);
 
 	buttonGroupBox->setLayout(buttonLayout);
 
@@ -148,18 +134,6 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	scrollArea = new QScrollArea;
 	scrollArea->setWidget(mainOutputsPage);
-	scrollArea->setWidgetResizable(true);
-	scrollArea->setLineWidth(0);
-	scrollArea->setFrameShape(QFrame::NoFrame);
-	settingsPages->addWidget(scrollArea);
-
-	auto verticalOutputsPage = new QGroupBox;
-	verticalOutputsPage->setProperty("customTitle", QVariant(true));
-	verticalOutputsPage->setStyleSheet(QString("QGroupBox[customTitle=\"true\"]{ padding-top: 4px;}"));
-	verticalOutputsPage->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-
-	scrollArea = new QScrollArea;
-	scrollArea->setWidget(verticalOutputsPage);
 	scrollArea->setWidgetResizable(true);
 	scrollArea->setLineWidth(0);
 	scrollArea->setFrameShape(QFrame::NoFrame);
@@ -286,93 +260,10 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	mainOutputsPage->setLayout(mainOutputsLayout);
 
-	verticalOutputsLayout = new QFormLayout;
-	verticalOutputsLayout->setContentsMargins(9, 2, 9, 9);
-	verticalOutputsLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-	verticalOutputsLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignTrailing | Qt::AlignVCenter);
-
-	streaming_title_layout = new QHBoxLayout;
-	streaming_title = new QLabel(QString::fromUtf8(obs_module_text("VerticalCanvas")));
-	streaming_title->setStyleSheet(QString::fromUtf8("font-weight: bold;"));
-	streaming_title_layout->addWidget(streaming_title, 0, Qt::AlignLeft);
-	//	addButton = new QPushButton(QIcon(":/res/images/plus.svg"), QString::fromUtf8(obs_module_text("AddOutput")));
-	//	addButton->setProperty("themeID", QVariant(QString::fromUtf8("addIconSmall")));
-	// 	addButton->setProperty("class", "icon-plus");
-	//	connect(addButton, &QPushButton::clicked, [this] {
-	//		if (!vertical_outputs)
-	//			return;
-	//		auto s = obs_data_create();
-	//		obs_data_set_string(s, "name", obs_module_text("Unnamed"));
-	//		obs_data_array_push_back(vertical_outputs, s);
-	//		AddServer(verticalOutputsLayout, s);
-	//		obs_data_release(s);
-	//	});
-
-	verticalAddButton = new QPushButton(QIcon(":/res/images/plus.svg"), QString::fromUtf8(obs_module_text("AddOutput")));
-	verticalAddButton->setProperty("themeID", QVariant(QString::fromUtf8("addIconSmall")));
-	verticalAddButton->setProperty("class", "icon-plus");
-
-	connect(verticalAddButton, &QPushButton::clicked, [this] {
-		QStringList otherNames;
-		obs_data_array_enum(
-			vertical_outputs,
-			[](obs_data_t *data2, void *param) {
-				((QStringList *)param)->append(QString::fromUtf8(obs_data_get_string(data2, "name")));
-			},
-			&otherNames);
-		otherNames.removeDuplicates();
-		auto outputDialog = new OutputDialog(this, otherNames);
-
-		outputDialog->setWindowModality(Qt::WindowModal);
-		outputDialog->setModal(true);
-
-		if (outputDialog->exec() == QDialog::Accepted) {
-			// create a new output
-			if (!vertical_outputs)
-				return;
-			auto s = obs_data_create();
-			obs_data_set_bool(s, "enabled", true);
-			obs_data_set_string(s, "name", outputDialog->outputName.toUtf8().constData());
-			obs_data_set_string(s, "stream_server", outputDialog->outputServer.toUtf8().constData());
-			obs_data_set_string(s, "stream_key", outputDialog->outputKey.toUtf8().constData());
-			obs_data_array_push_back(vertical_outputs, s);
-			AddServer(verticalOutputsLayout, s, vertical_outputs);
-			obs_data_release(s);
-		}
-
-		delete outputDialog;
-	});
-
-	streaming_title_layout->addWidget(verticalAddButton, 0, Qt::AlignRight);
-
-	verticalOutputsLayout->addRow(streaming_title_layout);
-
-	verticalOutputsPage->setLayout(verticalOutputsLayout);
-
-	// Support page
-	QWidget *supportPage = new QWidget;
-	auto supportPageLayout = new QVBoxLayout;
-	supportPage->setLayout(supportPageLayout);
-
-	auto supportInfoBox = ConfigUtils::generateSettingsGroupBox(QString::fromUtf8(obs_module_text("SupportTitle")));
-	supportInfoBox->setStyleSheet("padding-top: 12px");
-	auto supportLayout = new QVBoxLayout;
-	supportInfoBox->setLayout(supportLayout);
-
-	auto supportLabel = new QLabel(QString::fromUtf8(obs_module_text("SupportText")));
-	supportLabel->setStyleSheet("font-size: 14px");
-	supportLabel->setWordWrap(true);
-	supportLabel->setTextFormat(Qt::RichText);
-	supportLabel->setOpenExternalLinks(true);
-	supportLayout->addWidget(supportLabel, 1);
-	supportPageLayout->addWidget(supportInfoBox, 1, Qt::AlignTop);
-
-	settingsPages->addWidget(supportPage);
-
 	///
 	const auto version =
 		new QLabel(QString::fromUtf8(obs_module_text("Version")) + " " + QString::fromUtf8(PROJECT_VERSION) + " " +
-			   QString::fromUtf8(obs_module_text("MadeBy")) + " <a href=\"https://dkstudio.pro\">DKStudio</a>");
+			   QString::fromUtf8(obs_module_text("MadeBy")) + " <a href=\"https://boosty.to/dorriankarnett\">DKStudio</a>");
 	version->setOpenExternalLinks(true);
 	version->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 
@@ -409,12 +300,7 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	// Button connects for general page, clean this up in the future when we abstract pages
 	connect(generalMainButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(1); });
-
-	connect(generalVerticalButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(2); });
-
-	connect(generalHelpButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(listWidget->count() - 2); });
-
-	connect(generalSupportDKStudioButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(listWidget->count() - 1); });
+	connect(generalHelpButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(listWidget->count() - 1); });
 }
 
 OBSBasicSettings::~OBSBasicSettings()
@@ -485,8 +371,6 @@ void OBSBasicSettings::SetAppearanceIcon(const QIcon &icon)
 void OBSBasicSettings::SetStreamIcon(const QIcon &icon)
 {
 	listWidget->item(1)->setIcon(icon);
-	listWidget->item(2)->setIcon(icon);
-	generalVerticalButton->setIcon(icon);
 	generalMainButton->setIcon(icon);
 }
 
@@ -987,8 +871,7 @@ void OBSBasicSettings::AddServer(QFormLayout *outputsLayout, obs_data_t *setting
 
 			// Reload
 			LoadSettings(main_settings);
-			LoadVerticalSettings(false);
-		}
+					}
 
 		delete outputDialog;
 	});
@@ -1491,3 +1374,4 @@ void OBSBasicSettings::SetNewerVersion(QString newer_version_available)
 	newVersion->setText(QString::fromUtf8(obs_module_text("NewVersion")).arg(newer_version_available));
 	newVersion->setVisible(true);
 }
+

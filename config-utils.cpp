@@ -47,8 +47,8 @@ QToolButton *ConfigUtils::generateMenuButton(QString title, QIcon icon)
 	button->setIcon(icon);
 	button->setIconSize(QSize(32, 32));
 	button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-	button->setStyleSheet(
-		"min-width: 110px; max-width: 110px; min-height: 90px; max-height: 90px; padding-top: 16px; font-weight: bold;");
+		button->setStyleSheet(
+		"min-width: 128px; max-width: 128px; min-height: 102px; max-height: 102px; padding: 12px 8px 8px 8px; font-weight: bold;");
 
 	return button;
 }

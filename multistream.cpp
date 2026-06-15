@@ -1,4 +1,4 @@
-#include "config-utils.hpp"
+﻿#include "config-utils.hpp"
 #include "multistream.hpp"
 #include "obs-module.h"
 #include "version.h"
@@ -129,26 +129,6 @@ auto outputGroupStyle = QString("background-color: %1; padding: 0px;")
 
 auto outputPlatformIconSize = 36;
 
-// For showing warning for no vertical integration
-void showVerticalWarning(QVBoxLayout *verticalLayout)
-{
-	auto verticalWarning = new QWidget;
-	verticalWarning->setContentsMargins(0, 0, 0, 0);
-
-	auto verticalWarningLayout = new QVBoxLayout;
-	verticalWarningLayout->setContentsMargins(0, 0, 0, 0);
-
-	auto label = new QLabel(QString::fromUtf8(obs_module_text("NoVerticalWarning")));
-	label->setStyleSheet(QString("padding: 0px;"));
-	label->setWordWrap(true);
-	label->setTextFormat(Qt::RichText);
-	label->setOpenExternalLinks(true);
-	verticalWarningLayout->addWidget(label);
-	verticalWarning->setLayout(verticalWarningLayout);
-
-	verticalLayout->addWidget(verticalWarning);
-}
-
 config_t *get_user_config(void)
 {
 	return obs_frontend_get_user_config();
@@ -266,31 +246,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	mainCanvasGroup->setLayout(mainCanvasLayout);
 
 	tl->addWidget(mainCanvasGroup);
-
-	// VERTICAL
-	auto verticalCanvasGroup = new QGroupBox;
-	verticalCanvasGroup->setStyleSheet(canvasGroupStyle);
-
-	verticalCanvasLayout = new QVBoxLayout;
-	verticalCanvasGroup->setLayout(verticalCanvasLayout);
-	tl->addWidget(verticalCanvasGroup);
-
-	tl->addStretch(1);
-
-	// Layout for header row
-	auto verticalCanvasTitleRowLayout = new QHBoxLayout;
-
-	auto verticalCanvasLabel = new QLabel(QString::fromUtf8(obs_module_text("VerticalCanvas")));
-	verticalCanvasLabel->setStyleSheet(canvasGroupHeaderStyle);
-	verticalCanvasTitleRowLayout->addWidget(verticalCanvasLabel);
-
-	verticalCanvasLayout->addLayout(verticalCanvasTitleRowLayout);
-
-	// We store the actual outputs here
 	verticalCanvasOutputLayout = new QVBoxLayout;
-	verticalCanvasOutputLayout->setSpacing(4); // between outputs on vertical canvas
-
-	verticalCanvasLayout->addLayout(verticalCanvasOutputLayout); // Add output layout to parent
 
 	//tl->addWidget(verticalCanvasGroup);
 	QScrollArea *scrollArea = new QScrollArea;
@@ -329,8 +285,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 		if (current_config)
 			obs_data_apply(settings, current_config);
 		configDialog->LoadSettings(settings);
-		configDialog->LoadVerticalSettings(true);
-		configDialog->LoadOutputStats(&oldVideo);
+				configDialog->LoadOutputStats(&oldVideo);
 		configDialog->SetNewerVersion(newer_version_available);
 		configDialog->setResult(QDialog::Rejected);
 		if (configDialog->exec() == QDialog::Accepted) {
@@ -339,8 +294,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 				obs_data_release(settings);
 				SaveSettings();
 				LoadSettings();
-				configDialog->SaveVerticalSettings();
-				LoadVerticalOutputs(false);
+								LoadVerticalOutputs(false);
 			} else {
 				current_config = settings;
 			}
@@ -354,18 +308,19 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	// Contribute Button
 	auto contributeButton = new QPushButton;
 	contributeButton->setMinimumHeight(30);
-	contributeButton->setIcon(ConfigUtils::generateEmojiQIcon("❤️"));
-	contributeButton->setToolTip(QString::fromUtf8(obs_module_text("MultiCastDonate")));
+	contributeButton->setText(QString::fromUtf8("B"));
+	contributeButton->setStyleSheet(QString::fromUtf8("font-weight: 800; color: #ff7a00;"));
+	contributeButton->setToolTip(QString::fromUtf8("Boosty"));
 	QPushButton::connect(contributeButton, &QPushButton::clicked,
-			     [] { QDesktopServices::openUrl(QUrl("https://dkstudio.pro/support")); });
+			     [] { QDesktopServices::openUrl(QUrl("https://boosty.to/dorriankarnett")); });
 	buttonRow->addWidget(contributeButton);
 
 	// DKStudio Button
 	auto dkstudioButton = new QPushButton;
 	dkstudioButton->setMinimumHeight(30);
 	dkstudioButton->setIcon(QIcon(":/multicast/media/multicast.png"));
-	dkstudioButton->setToolTip(QString::fromUtf8("https://dkstudio.pro"));
-	QPushButton::connect(dkstudioButton, &QPushButton::clicked, [] { QDesktopServices::openUrl(QUrl("https://dkstudio.pro")); });
+	dkstudioButton->setToolTip(QString::fromUtf8("Telegram"));
+	QPushButton::connect(dkstudioButton, &QPushButton::clicked, [] { QDesktopServices::openUrl(QUrl("https://t.me/dkstudio_dev")); });
 	buttonRow->addWidget(dkstudioButton);
 
 	mainLayout->addLayout(buttonRow);
@@ -1155,7 +1110,7 @@ void MultistreamDock::ApiInfo(QString info)
 			if (layout) {
 				added_count++;
 				if (i == 1) {
-					auto closeButton = new QPushButton("🞫");
+					auto closeButton = new QPushButton("рџћ«");
 					connect(closeButton, &QPushButton::clicked, [this, added_count] {
 						for (size_t j = 0; j < added_count; j++) {
 							auto item = mainLayout->takeAt(1);
@@ -1181,9 +1136,6 @@ void MultistreamDock::LoadVerticalOutputs(bool firstLoad)
 	struct calldata cd;
 	calldata_init(&cd);
 	if (!proc_handler_call(ph, "aitum_vertical_get_stream_settings", &cd)) {
-		if (firstLoad) {                                         // only display warning on first load
-			showVerticalWarning(verticalCanvasOutputLayout); // show warning
-		}
 		calldata_free(&cd);
 		return;
 	}
@@ -1218,9 +1170,9 @@ bool MultistreamDock::CanUseMultiCast(QString *reason) const
 		if (!multicastAuthMessage.trimmed().isEmpty()) {
 			*reason = multicastAuthMessage;
 		} else if (!multicastDesktopReachable) {
-			*reason = QString::fromUtf8("Launch DKStudio to unlock MultiCast.");
+			*reason = QString::fromUtf8("Откройте DKStudio, чтобы разблокировать MultiCast.");
 		} else {
-			*reason = QString::fromUtf8("Sign in to DKStudio to unlock MultiCast.");
+			*reason = QString::fromUtf8("Войдите в аккаунт DKStudio, чтобы разблокировать MultiCast.");
 		}
 	}
 
@@ -1237,15 +1189,15 @@ void MultistreamDock::ApplyAuthState(bool reachable, bool authorized, const QStr
 	QString labelStyle;
 	if (authorized) {
 		labelText = QString::fromUtf8(
-			"<span style='color:#16a34a;'><strong>DKStudio connected.</strong> MultiCast is unlocked.</span>");
+			"<span style='color:#16a34a;'><strong>DKStudio подключен.</strong> MultiCast разблокирован.</span>");
 		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(22,163,74,0.12);");
 	} else if (reachable) {
 		labelText = QString::fromUtf8(
-			"<span style='color:#f59e0b;'><strong>DKStudio found, login required.</strong> Sign in to unlock MultiCast.</span>");
+			"<span style='color:#f59e0b;'><strong>DKStudio найден.</strong> Войдите в аккаунт, чтобы разблокировать MultiCast.</span>");
 		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(245,158,11,0.12);");
 	} else {
 		labelText = QString::fromUtf8(
-			"<span style='color:#ef4444;'><strong>DKStudio is offline.</strong> Launch the app to use MultiCast.</span>");
+			"<span style='color:#ef4444;'><strong>DKStudio не запущен.</strong> Откройте программу, чтобы использовать MultiCast.</span>");
 		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(239,68,68,0.12);");
 	}
 
@@ -1279,7 +1231,7 @@ void MultistreamDock::UpdateAuthState()
 	QByteArray responseData;
 	CURL *curl = curl_easy_init();
 	if (!curl) {
-		ApplyAuthState(false, false, QString::fromUtf8("Failed to initialize local auth check."));
+		ApplyAuthState(false, false, QString::fromUtf8("Не удалось запустить локальную проверку авторизации."));
 		return;
 	}
 
@@ -1297,14 +1249,14 @@ void MultistreamDock::UpdateAuthState()
 	curl_easy_cleanup(curl);
 
 	if (code != CURLE_OK || responseCode < 200 || responseCode >= 300) {
-		ApplyAuthState(false, false, QString::fromUtf8("Launch DKStudio to unlock MultiCast."));
+		ApplyAuthState(false, false, QString::fromUtf8("Откройте DKStudio, чтобы разблокировать MultiCast."));
 		return;
 	}
 
 	QJsonParseError parseError;
 	QJsonDocument document = QJsonDocument::fromJson(responseData, &parseError);
 	if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-		ApplyAuthState(false, false, QString::fromUtf8("Invalid DKStudio auth response."));
+		ApplyAuthState(false, false, QString::fromUtf8("DKStudio вернул некорректный ответ авторизации."));
 		return;
 	}
 
@@ -1315,13 +1267,13 @@ void MultistreamDock::UpdateAuthState()
 
 	if (ready || isLoggedIn) {
 		QString message = username.isEmpty()
-					  ? QString::fromUtf8("DKStudio connected.")
-					  : QString::fromUtf8("DKStudio connected for %1.").arg(username);
+					  ? QString::fromUtf8("DKStudio подключен.")
+					  : QString::fromUtf8("DKStudio подключен: %1.").arg(username);
 		ApplyAuthState(true, ready, message);
 		return;
 	}
 
-	ApplyAuthState(true, false, QString::fromUtf8("Sign in to DKStudio to unlock MultiCast."));
+	ApplyAuthState(true, false, QString::fromUtf8("Войдите в аккаунт DKStudio, чтобы разблокировать MultiCast."));
 }
 
 void MultistreamDock::storeMainStreamEncoders()
@@ -1449,3 +1401,5 @@ void AspectRatioPixmapLabel::resizeEvent(QResizeEvent *e)
 	if (!pix.isNull())
 		QLabel::setPixmap(scaledPixmap());
 }
+
+

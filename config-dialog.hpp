@@ -59,9 +59,7 @@ private:
 
 	QPushButton *verticalAddButton;
 	QToolButton *generalMainButton;
-	QToolButton *generalVerticalButton;
 	QToolButton *generalHelpButton;
-	QToolButton *generalSupportDKStudioButton;
 
 private slots:
 	void SetGeneralIcon(const QIcon &icon);
