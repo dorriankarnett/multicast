@@ -24,3 +24,5 @@ cmake/.CMakeBuildNumber
 *.user
 *.VC.db
 *.opendb
+
+ARTIFACT/
