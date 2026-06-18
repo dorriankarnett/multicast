@@ -17,10 +17,18 @@ public:
 	static QPushButton *generateButton(QString buttonText);
 	static QGroupBox *generateSettingsGroupBox(QString headingText);
 	static QToolButton *generateMenuButton(QString title, QIcon icon);
+	static QString dialogStyle();
+	static QString panelStyle(const QString &accentColor = QString());
+	static QString primaryButtonStyle();
+	static QString secondaryButtonStyle();
+	static QString dangerButtonStyle();
+	static QString sidebarStyle();
+	static QString serviceTileStyle();
 	
 	static QIcon generateEmojiQIcon(QString emoji);
 
 	static void updateButtonStyles(QPushButton *defaultButton, QPushButton *customButton, int activeIndex);
 
 	static QIcon getPlatformIconFromEndpoint(QString endpoint);
+	static QString getPlatformAccentColor(QString endpoint);
 };

@@ -22,6 +22,9 @@
 #include <QIcon>
 #include <QTabWidget>
 #include <QDialogButtonBox>
+#include <QFrame>
+#include <QGridLayout>
+#include <QSizePolicy>
 
 #include "obs-module.h"
 #include "version.h"
@@ -54,6 +57,7 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	setMinimumHeight(480);
 	setWindowTitle(obs_module_text("MultiCastSettings"));
 	setSizeGripEnabled(true);
+	setStyleSheet(ConfigUtils::dialogStyle());
 
 	const auto main_window = static_cast<QMainWindow *>(obs_frontend_get_main_window());
 
@@ -61,6 +65,7 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	listWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
 	listWidget->setMaximumWidth(180);
+	listWidget->setStyleSheet(ConfigUtils::sidebarStyle());
 	QListWidgetItem *listwidgetitem = new QListWidgetItem(listWidget);
 	listwidgetitem->setIcon(QIcon(QString::fromUtf8(":/settings/images/settings/general.svg")));
 	//listwidgetitem->setProperty("themeID", QVariant(QString::fromUtf8("configIconSmall")));
@@ -89,36 +94,105 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	settingsPages->setFrameShape(QFrame::NoFrame);
 	settingsPages->setLineWidth(0);
 
+	const QString mutedTextStyle = QString::fromUtf8(
+		"color: #B8C0CF; background: transparent; border: none; padding: 0; margin: 0; line-height: 115%;");
+	const QString sectionTitleStyle = QString::fromUtf8(
+		"color: #F3F5F8; font-size: 24px; font-weight: 900; "
+		"background: transparent; border: none; padding: 0; margin: 0;");
+	const QString boostyButtonStyle = QString::fromUtf8(
+		"QPushButton { min-width: 116px; background-color: #3A2A1B; color: #E68A2E; "
+		"border: 1px solid #E68A2E; border-radius: 9px; padding: 9px 16px; font-weight: 800; }"
+		"QPushButton:hover { background-color: #463321; }");
+	const QString telegramButtonStyle = QString::fromUtf8(
+		"QPushButton { min-width: 116px; background-color: #1F2E3D; color: #2AABEE; "
+		"border: 1px solid #2AABEE; border-radius: 9px; padding: 9px 16px; font-weight: 800; }"
+		"QPushButton:hover { background-color: #24384A; }");
+
 	QWidget *generalPage = new QWidget;
 	auto generalPageLayout = new QVBoxLayout;
+	generalPageLayout->setSpacing(16);
+	generalPageLayout->setContentsMargins(0, 0, 0, 0);
 	generalPage->setLayout(generalPageLayout);
 
-	auto infoBox = ConfigUtils::generateSettingsGroupBox(QString::fromUtf8(obs_module_text("WelcomeTitle")));
-	infoBox->setStyleSheet("padding-top: 12px");
-	auto infoLayout = new QVBoxLayout;
-	infoBox->setLayout(infoLayout);
+	auto brandPanel = new QFrame;
+	brandPanel->setStyleSheet(ConfigUtils::panelStyle(QString::fromUtf8("#E68A2E")));
+	brandPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+	auto brandLayout = new QGridLayout;
+	brandLayout->setContentsMargins(28, 24, 28, 24);
+	brandLayout->setHorizontalSpacing(28);
+	brandLayout->setVerticalSpacing(10);
+	brandLayout->setColumnStretch(0, 3);
+	brandLayout->setColumnStretch(1, 2);
 
-	auto infoLabel = new QLabel(QString::fromUtf8(obs_module_text("WelcomeText")));
-	infoLabel->setWordWrap(true);
-	infoLayout->addWidget(infoLabel, 1);
+	auto brandTitle = new QLabel(QString::fromUtf8("MultiCast"));
+	brandTitle->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+	brandTitle->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	brandTitle->setStyleSheet("font-size: 34px; font-weight: 900; background: transparent; border: none; padding: 0; margin: 0;");
+	auto brandSubtitle = new QLabel(QString::fromUtf8("Центр управления мультистримом от DKStudio"));
+	brandSubtitle->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+	brandSubtitle->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	brandSubtitle->setStyleSheet("font-size: 15px; " + mutedTextStyle);
+	brandSubtitle->setWordWrap(true);
 
-	auto buttonGroupBox = new QWidget();
-	auto buttonLayout = new QHBoxLayout;
-	buttonLayout->setSpacing(8);
-	buttonLayout->setAlignment(Qt::AlignCenter);
+	auto linksLayout = new QHBoxLayout;
+	linksLayout->setSpacing(10);
+	linksLayout->setAlignment(Qt::AlignLeft);
+	linksLayout->setContentsMargins(0, 8, 0, 0);
 
-	generalMainButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SettingsMainOutputsButton")),
-							    QIcon(QString::fromUtf8(":/settings/images/settings/stream.svg")));
-	generalHelpButton = ConfigUtils::generateMenuButton(QString::fromUtf8(obs_module_text("SettingsHelpButton")),
-							    main_window->property("defaultIcon").value<QIcon>());
+	auto boostyButton = new QPushButton(QString::fromUtf8("BOOSTY"));
+	boostyButton->setStyleSheet(boostyButtonStyle);
+	connect(boostyButton, &QPushButton::clicked, [] {
+		QDesktopServices::openUrl(QUrl(QString::fromUtf8("https://boosty.to/dorriankarnett")));
+	});
 
-	buttonLayout->addWidget(generalMainButton, 0);
-	buttonLayout->addWidget(generalHelpButton, 0);
+	auto telegramButton = new QPushButton(QString::fromUtf8("TELEGRAM"));
+	telegramButton->setStyleSheet(telegramButtonStyle);
+	connect(telegramButton, &QPushButton::clicked, [] {
+		QDesktopServices::openUrl(QUrl(QString::fromUtf8("https://t.me/dkstudio_dev")));
+	});
 
-	buttonGroupBox->setLayout(buttonLayout);
+	linksLayout->addWidget(boostyButton, 0);
+	linksLayout->addWidget(telegramButton, 0);
+	linksLayout->addStretch(1);
 
-	generalPageLayout->addWidget(infoBox, 0);
-	generalPageLayout->addWidget(buttonGroupBox, 1);
+	auto introText = new QLabel(QString::fromUtf8(
+		"MultiCast помогает управлять дополнительными выводами OBS в одном месте. "
+		"Настраивайте площадки для основного холста и запускайте нужные трансляции из одной панели."));
+	introText->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+	introText->setWordWrap(true);
+	introText->setTextFormat(Qt::PlainText);
+	introText->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	introText->setStyleSheet("font-size: 14px; " + mutedTextStyle);
+
+	auto hintPanel = new QFrame;
+	hintPanel->setStyleSheet(QString::fromUtf8(
+		"background-color: #232938; border: none; border-radius: 12px;"));
+	auto hintLayout = new QVBoxLayout;
+	hintLayout->setContentsMargins(18, 16, 18, 16);
+	hintLayout->setSpacing(8);
+	hintPanel->setLayout(hintLayout);
+
+	auto hintTitle = new QLabel(QString::fromUtf8("Быстрый старт"));
+	hintTitle->setStyleSheet("font-size: 16px; font-weight: 800; background: transparent; border: none; padding: 0; margin: 0;");
+	auto hintText = new QLabel(QString::fromUtf8(
+		"1. Откройте «Основной холст».\n"
+		"2. Нажмите «Добавить новый вывод».\n"
+		"3. Выберите площадку и вставьте ключ трансляции."));
+	hintText->setWordWrap(true);
+	hintText->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	hintText->setStyleSheet("font-size: 13px; " + mutedTextStyle);
+	hintLayout->addWidget(hintTitle);
+	hintLayout->addWidget(hintText);
+
+	brandLayout->addWidget(brandTitle, 0, 0, 1, 1);
+	brandLayout->addWidget(brandSubtitle, 1, 0, 1, 1);
+	brandLayout->addWidget(introText, 2, 0, 1, 1);
+	brandLayout->addLayout(linksLayout, 3, 0, 1, 1);
+	brandLayout->addWidget(hintPanel, 0, 1, 4, 1);
+	brandPanel->setLayout(brandLayout);
+
+	generalPageLayout->addWidget(brandPanel, 0);
+	generalPageLayout->addStretch(1);
 
 	QScrollArea *scrollArea = new QScrollArea;
 	scrollArea->setWidget(generalPage);
@@ -152,25 +226,68 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	// Help page
 	auto helpPage = new QWidget;
 	auto helpPageLayout = new QVBoxLayout;
+	helpPageLayout->setContentsMargins(0, 0, 0, 0);
+	helpPageLayout->setSpacing(0);
 	helpPage->setLayout(helpPageLayout);
+
 	scrollArea = new QScrollArea;
 	scrollArea->setWidget(helpPage);
 	scrollArea->setWidgetResizable(true);
 	scrollArea->setLineWidth(0);
 	scrollArea->setFrameShape(QFrame::NoFrame);
 
-	auto helpInfoBox = ConfigUtils::generateSettingsGroupBox(QString::fromUtf8(obs_module_text("HelpTitle")));
-	helpInfoBox->setStyleSheet("padding-top: 12px");
-	auto helpLayout = new QVBoxLayout;
+	auto helpInfoBox = new QFrame;
+	helpInfoBox->setStyleSheet(ConfigUtils::panelStyle(QString::fromUtf8("#2AABEE")));
+	helpInfoBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+	auto helpLayout = new QGridLayout;
+	helpLayout->setContentsMargins(28, 24, 28, 24);
+	helpLayout->setHorizontalSpacing(28);
+	helpLayout->setVerticalSpacing(10);
+	helpLayout->setColumnStretch(0, 3);
+	helpLayout->setColumnStretch(1, 2);
 	helpInfoBox->setLayout(helpLayout);
 
-	auto helpLabel = new QLabel(QString::fromUtf8(obs_module_text("HelpText")));
-	helpLabel->setStyleSheet("font-size: 14px");
+	auto helpTitle = new QLabel(QString::fromUtf8(obs_module_text("HelpTitle")));
+	helpTitle->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+	helpTitle->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	helpTitle->setStyleSheet(sectionTitleStyle);
+	auto helpLabel = new QLabel(QString::fromUtf8(
+		"Если нашли баг, что-то работает не так или есть идеи по улучшению MultiCast, напишите в поддержку DKStudio."));
+	helpLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+	helpLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	helpLabel->setStyleSheet("font-size: 14px; " + mutedTextStyle);
 	helpLabel->setWordWrap(true);
-	helpLabel->setTextFormat(Qt::RichText);
-	helpLabel->setOpenExternalLinks(true);
-	helpLayout->addWidget(helpLabel, 1);
-	helpPageLayout->addWidget(helpInfoBox, 1, Qt::AlignTop);
+
+	auto helpButton = new QPushButton(QString::fromUtf8("НАПИСАТЬ В ПОДДЕРЖКУ"));
+	helpButton->setStyleSheet(telegramButtonStyle);
+	connect(helpButton, &QPushButton::clicked, [] {
+		QDesktopServices::openUrl(QUrl(QString::fromUtf8("https://t.me/dkstudio_dev")));
+	});
+
+	auto helpAside = new QFrame;
+	helpAside->setStyleSheet(QString::fromUtf8(
+		"background-color: #232938; border: none; border-radius: 12px;"));
+	auto helpAsideLayout = new QVBoxLayout;
+	helpAsideLayout->setContentsMargins(18, 16, 18, 16);
+	helpAsideLayout->setSpacing(8);
+	helpAside->setLayout(helpAsideLayout);
+	auto helpAsideTitle = new QLabel(QString::fromUtf8("Что написать"));
+	helpAsideTitle->setStyleSheet("font-size: 16px; font-weight: 800; background: transparent; border: none; padding: 0; margin: 0;");
+	auto helpAsideText = new QLabel(QString::fromUtf8(
+		"Версию DKStudio Pro, версию OBS, что делали перед ошибкой и скриншот окна."));
+	helpAsideText->setWordWrap(true);
+	helpAsideText->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+	helpAsideText->setStyleSheet("font-size: 13px; " + mutedTextStyle);
+	helpAsideLayout->addWidget(helpAsideTitle);
+	helpAsideLayout->addWidget(helpAsideText);
+
+	helpLayout->addWidget(helpTitle, 0, 0, 1, 1);
+	helpLayout->addWidget(helpLabel, 1, 0, 1, 1);
+	helpLayout->addWidget(helpButton, 2, 0, 1, 1, Qt::AlignLeft);
+	helpLayout->addWidget(helpAside, 0, 1, 3, 1);
+
+	helpPageLayout->addWidget(helpInfoBox, 0);
+	helpPageLayout->addStretch(1);
 
 	settingsPages->addWidget(scrollArea);
 
@@ -183,12 +300,13 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	auto streaming_title_layout = new QHBoxLayout;
 	auto streaming_title = new QLabel(QString::fromUtf8(obs_module_text("MainCanvas")));
-	streaming_title->setStyleSheet(QString::fromUtf8("font-weight: bold;"));
+	streaming_title->setStyleSheet(QString::fromUtf8("font-weight: 800; font-size: 20px;"));
 	streaming_title_layout->addWidget(streaming_title, 0, Qt::AlignLeft);
 
 	auto addButton = new QPushButton(QIcon(":/res/images/plus.svg"), QString::fromUtf8(obs_module_text("AddOutput")));
 	addButton->setProperty("themeID", QVariant(QString::fromUtf8("addIconSmall")));
 	addButton->setProperty("class", "icon-plus");
+	addButton->setStyleSheet(ConfigUtils::primaryButtonStyle());
 
 	connect(addButton, &QPushButton::clicked, [this] {
 		QStringList otherNames;
@@ -236,27 +354,10 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 
 	mainOutputsLayout->addRow(streaming_title_layout);
 
-	auto serverGroup = new QGroupBox;
-	serverGroup->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
-	serverGroup->setStyleSheet(QString("QGroupBox{background-color: %1; padding-top: 4px;}")
-					   .arg(palette().color(QPalette::ColorRole::Mid).name(QColor::HexRgb)));
-
-	auto serverLayout = new QFormLayout;
-	serverLayout->setContentsMargins(9, 2, 9, 9);
-	serverLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-	serverLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignTrailing | Qt::AlignVCenter);
-
-	auto mainTitle = new QLabel(QString::fromUtf8(obs_module_text("SettingsMainCanvasTitle")));
-	mainTitle->setStyleSheet("font-weight: bold;");
-	serverLayout->addRow(mainTitle);
-
 	auto mainDescription = new QLabel(QString::fromUtf8(obs_module_text("SettingsMainCanvasDescription")));
-	//	mainTitle->setStyleSheet(QString::fromUtf8("font-weight: bold;"));
-	serverLayout->addRow(mainDescription);
-
-	serverGroup->setLayout(serverLayout);
-
-	mainOutputsLayout->addRow(serverGroup);
+	mainDescription->setWordWrap(true);
+	mainDescription->setStyleSheet("color: #B8C0CF; background: transparent; border: none; padding: 0; margin: 0 0 6px 0;");
+	mainOutputsLayout->addRow(mainDescription);
 
 	mainOutputsPage->setLayout(mainOutputsLayout);
 
@@ -298,9 +399,6 @@ OBSBasicSettings::OBSBasicSettings(QMainWindow *parent) : QDialog(parent)
 	vlayout->addLayout(bottomLayout);
 	setLayout(vlayout);
 
-	// Button connects for general page, clean this up in the future when we abstract pages
-	connect(generalMainButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(1); });
-	connect(generalHelpButton, &QPushButton::clicked, [this] { listWidget->setCurrentRow(listWidget->count() - 1); });
 }
 
 OBSBasicSettings::~OBSBasicSettings()
@@ -371,7 +469,6 @@ void OBSBasicSettings::SetAppearanceIcon(const QIcon &icon)
 void OBSBasicSettings::SetStreamIcon(const QIcon &icon)
 {
 	listWidget->item(1)->setIcon(icon);
-	generalMainButton->setIcon(icon);
 }
 
 void OBSBasicSettings::SetOutputIcon(const QIcon &icon)
@@ -411,12 +508,15 @@ void OBSBasicSettings::AddServer(QFormLayout *outputsLayout, obs_data_t *setting
 	serverGroup->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 	serverGroup->setProperty("altColor", QVariant(true));
 	serverGroup->setProperty("customTitle", QVariant(true));
-	serverGroup->setStyleSheet(
-		QString("QGroupBox[altColor=\"true\"]{background-color: %1;} QGroupBox[customTitle=\"true\"]{padding-top: 4px;}")
-			.arg(palette().color(QPalette::ColorRole::Mid).name(QColor::HexRgb)));
+	const auto endpoint = QString::fromUtf8(obs_data_get_string(settings, "stream_server"));
+	const auto accentColor = ConfigUtils::getPlatformAccentColor(endpoint);
+	serverGroup->setStyleSheet(QString::fromUtf8(
+		"QGroupBox { background-color: #1D212B; border: 1px solid #31384B; border-left: 4px solid %1; border-radius: 14px; padding-top: 8px; }"
+		"QGroupBox[customTitle=\"true\"]{padding-top: 8px;}")
+					 .arg(accentColor));
 
 	auto serverLayout = new QFormLayout;
-	serverLayout->setContentsMargins(9, 2, 9, 2);
+	serverLayout->setContentsMargins(12, 6, 12, 8);
 
 	serverLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
 	serverLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignTrailing | Qt::AlignVCenter);
@@ -425,8 +525,7 @@ void OBSBasicSettings::AddServer(QFormLayout *outputsLayout, obs_data_t *setting
 	auto server_title_layout = new QHBoxLayout;
 
 	auto platformIconLabel = new QLabel;
-	auto platformIcon =
-		ConfigUtils::getPlatformIconFromEndpoint(QString::fromUtf8(obs_data_get_string(settings, "stream_server")));
+	auto platformIcon = ConfigUtils::getPlatformIconFromEndpoint(endpoint);
 	platformIconLabel->setPixmap(platformIcon.pixmap(36, 36));
 	server_title_layout->addWidget(platformIconLabel, 0);
 
@@ -434,8 +533,7 @@ void OBSBasicSettings::AddServer(QFormLayout *outputsLayout, obs_data_t *setting
 
 	auto streaming_title = new QToolButton;
 	streaming_title->setText(QString::fromUtf8(obs_data_get_string(settings, "name")));
-	streaming_title->setStyleSheet(QString("QToolButton{background-color: %1;font-weight: bold;border: none;}")
-					       .arg(palette().color(QPalette::ColorRole::Mid).name(QColor::HexRgb)));
+	streaming_title->setStyleSheet("QToolButton{background-color: transparent; font-weight: 800; font-size: 16px; border: none; color: #F3F5F8;}");
 	streaming_title->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
 	streaming_title->setArrowType(expanded ? Qt::ArrowType::DownArrow : Qt::ArrowType::RightArrow);
 	streaming_title->setCheckable(true);
@@ -821,6 +919,7 @@ void OBSBasicSettings::AddServer(QFormLayout *outputsLayout, obs_data_t *setting
 		new QPushButton(QIcon(":/res/images/minus.svg"), QString::fromUtf8(obs_frontend_get_locale_string("Remove")));
 	removeButton->setProperty("themeID", QVariant(QString::fromUtf8("removeIconSmall")));
 	removeButton->setProperty("class", "icon-minus");
+	removeButton->setStyleSheet(ConfigUtils::dangerButtonStyle());
 	connect(removeButton, &QPushButton::clicked, [this, outputsLayout, serverGroup, settings, outputs] {
 		outputsLayout->removeWidget(serverGroup);
 		RemoveWidget(serverGroup);
@@ -840,6 +939,7 @@ void OBSBasicSettings::AddServer(QFormLayout *outputsLayout, obs_data_t *setting
 	auto editButton = new QPushButton(QString::fromUtf8(obs_module_text("EditServerSettings")));
 	editButton->setProperty("themeID", "configIconSmall");
 	editButton->setProperty("class", "icon-gear");
+	editButton->setStyleSheet(ConfigUtils::secondaryButtonStyle());
 
 	connect(editButton, &QPushButton::clicked, [this, settings, outputs] {
 		QStringList otherNames;

@@ -15,6 +15,7 @@
 #include "obs-module.h"
 #include "util/platform.h"
 #include "stream-key-input.hpp"
+#include "config-utils.hpp"
 
 // Reset output values, e.g. when user hits the back button
 void OutputDialog::resetOutputs()
@@ -220,7 +221,7 @@ QPushButton *generateButton(QString text)
 {
 	auto button = new QPushButton;
 	button->setText(text);
-	button->setStyleSheet("padding: 4px 12px;");
+	button->setStyleSheet(ConfigUtils::secondaryButtonStyle());
 	button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
 
 	return button;
@@ -247,8 +248,7 @@ QToolButton *OutputDialog::selectionButton(std::string title, QIcon icon, int se
 	button->setIcon(icon);
 	button->setIconSize(QSize(32, 32));
 	button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-	button->setStyleSheet(
-		"min-width: 110px; max-width: 110px; min-height: 90px; max-height: 90px; padding-top: 16px; font-weight: bold;");
+	button->setStyleSheet(ConfigUtils::serviceTileStyle());
 
 	connect(button, &QPushButton::clicked, [this, selectionStep] { stackedWidget->setCurrentIndex(selectionStep); });
 
@@ -292,6 +292,7 @@ OutputDialog::OutputDialog(QDialog *parent, QStringList _otherNames) : QDialog(p
 	setModal(true);
 	setContentsMargins(0, 0, 0, 0);
 	setFixedSize(650, 400);
+	setStyleSheet(ConfigUtils::dialogStyle());
 
 	stackedWidget = new QStackedWidget;
 
@@ -353,6 +354,7 @@ OutputDialog::OutputDialog(QDialog *parent, QString name, QString server, QStrin
 	setModal(true);
 	setContentsMargins(0, 0, 0, 0);
 	setFixedSize(650, 400);
+	setStyleSheet(ConfigUtils::dialogStyle());
 
 	auto layout = new QVBoxLayout();
 
@@ -398,19 +400,20 @@ QWidget *OutputDialog::WizardServicePage()
 
 	auto description = new QLabel(QString::fromUtf8(obs_module_text("NewOutputSelectService")));
 	description->setWordWrap(true);
-	description->setStyleSheet("margin-bottom: 20px;");
+	description->setStyleSheet("margin-bottom: 10px; color: #B8C0CF; font-size: 14px;");
 	pageLayout->addWidget(description);
 
 	// layout for service selection
 	auto selectionLayout = new QVBoxLayout;
 	selectionLayout->setAlignment(Qt::AlignCenter);
 
-	auto spacerTest = new QSpacerItem(20, 45, QSizePolicy::Fixed, QSizePolicy::Fixed);
+	auto spacerTest = new QSpacerItem(20, 20, QSizePolicy::Fixed, QSizePolicy::Fixed);
 
 	pageLayout->addSpacerItem(spacerTest);
 
 	// row 1
 	auto rowOne = new QHBoxLayout;
+	rowOne->setSpacing(8);
 
 	rowOne->addWidget(selectionButton("Twitch", platformIconTwitch, 5));
 	rowOne->addWidget(selectionButton("YouTube", platformIconYouTube, 2));
@@ -421,6 +424,7 @@ QWidget *OutputDialog::WizardServicePage()
 
 	// row 2
 	auto rowTwo = new QHBoxLayout;
+	rowTwo->setSpacing(8);
 
 	rowTwo->addWidget(selectionButton("Trovo", platformIconTrovo, 6));
 	rowTwo->addWidget(selectionButton("X (Twitter)", platformIconTwitter, 3));

@@ -111,21 +111,42 @@ void RemoveWidget(QWidget *widget)
 // Output button styling
 void MultistreamDock::outputButtonStyle(QPushButton *button)
 {
-	button->setMinimumHeight(24);
-
-	std::string baseStyles = "min-width: 30px; padding: 2px 10px; border-width: 2px;";
-
-	button->setStyleSheet(QString::fromUtf8(baseStyles + (button->isChecked() ? "background: rgb(0,210,153);" : "")));
-
+	button->setMinimumHeight(30);
+	button->setMinimumWidth(62);
+	button->setText(QString::fromUtf8("LIVE"));
+	button->setStyleSheet(button->isChecked()
+				      ? QString::fromUtf8(
+					      "QPushButton { background-color: #B91C1C; color: #FFFFFF; border: 1px solid #EF4444; "
+					      "border-radius: 9px; padding: 5px 12px; font-weight: 900; letter-spacing: 1px; }"
+					      "QPushButton:hover { background-color: #DC2626; }")
+				      : QString::fromUtf8(
+					      "QPushButton { background-color: #252B39; color: #8F98AA; border: 1px solid #3A4256; "
+					      "border-radius: 9px; padding: 5px 12px; font-weight: 900; letter-spacing: 1px; }"
+					      "QPushButton:hover { border-color: #5A657F; color: #D7DCE8; }"));
 	button->setIcon(button->isChecked() ? streamActiveIcon : streamInactiveIcon);
 }
 
 // Common styling things here
-auto canvasGroupStyle = QString("padding: 0px 0px 0px 0px;");                          // Main Canvas, Vertical Canvas
-auto canvasGroupHeaderStyle = QString("padding: 0px 0px 0px 0px; font-weight: bold;"); // header of each group
-auto outputTitleStyle = QString("QLabel{}");                                           // "Built -in stream"
-auto outputGroupStyle = QString("background-color: %1; padding: 0px;")
-				.arg(QPalette().color(QPalette::ColorRole::Mid).name(QColor::HexRgb)); // wrapper around above
+auto dockRootStyle = QString::fromUtf8("QFrame { background-color: #20242F; color: #F3F5F8; }");
+auto canvasGroupStyle = QString::fromUtf8("QGroupBox { background: transparent; border: none; padding: 0px; margin: 0px; }");
+auto outputTitleStyle = QString::fromUtf8(
+	"QLabel { color: #F3F5F8; font-size: 13px; font-weight: 650; background: transparent; border: none; padding: 0px; }");
+auto outputGroupStyle = QString::fromUtf8(
+	"QGroupBox { background-color: #171B25; border: 1px solid #2B3141; border-left: 4px solid #E68A2E; "
+	"border-radius: 12px; padding: 0px; margin: 0px; }"
+	"QGroupBox:hover { border-color: #46516B; border-left-color: #F09A3F; }");
+auto bottomButtonStyle = QString::fromUtf8(
+	"QPushButton { min-height: 32px; background-color: #303748; color: #F3F5F8; border: 1px solid #444D63; "
+	"border-radius: 8px; padding: 6px 12px; font-weight: 800; }"
+	"QPushButton:hover { background-color: #394257; border-color: #59657F; }");
+auto bottomBoostyStyle = QString::fromUtf8(
+	"QPushButton { min-height: 32px; background-color: #3A2A1B; color: #FF7A00; border: 1px solid #E68A2E; "
+	"border-radius: 8px; padding: 6px 12px; font-weight: 900; }"
+	"QPushButton:hover { background-color: #463321; }");
+auto bottomTelegramStyle = QString::fromUtf8(
+	"QPushButton { min-height: 32px; background-color: #1F2E3D; color: #2AABEE; border: 1px solid #2AABEE; "
+	"border-radius: 8px; padding: 6px 12px; font-weight: 900; }"
+	"QPushButton:hover { background-color: #24384A; }");
 
 auto outputPlatformIconSize = 36;
 
@@ -136,16 +157,19 @@ config_t *get_user_config(void)
 
 MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 {
+	setStyleSheet(dockRootStyle);
+
 	// Main layout
 	mainLayout = new QVBoxLayout;
-	mainLayout->setContentsMargins(0, 0, 0, 0);
+	mainLayout->setContentsMargins(8, 10, 8, 8);
+	mainLayout->setSpacing(8);
 	setLayout(mainLayout);
 
 	auto t = new QWidget;
 	auto tl = new QVBoxLayout;
 	tl->setSpacing(8); // between canvas groups
 	tl->setContentsMargins(0, 0, 0, 0);
-	t->setStyleSheet(QString("padding: 0px; margin:0px;"));
+	t->setStyleSheet(QString::fromUtf8("background: transparent; padding: 0px; margin:0px;"));
 	t->setLayout(tl);
 
 	// Group for built in canvas
@@ -153,27 +177,24 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	mainCanvasGroup->setStyleSheet(canvasGroupStyle);
 
 	mainCanvasLayout = new QVBoxLayout;
-	mainCanvasLayout->setSpacing(4); // between outputs on main canvas
-
-	// Layout for header row
-	auto mainCanvasTitleRowLayout = new QHBoxLayout;
-
-	auto mainCanvasLabel = new QLabel(QString::fromUtf8(obs_module_text("MainCanvas")));
-	mainCanvasLabel->setStyleSheet(canvasGroupHeaderStyle);
-	mainCanvasTitleRowLayout->addWidget(mainCanvasLabel);
-
-	mainCanvasLayout->addLayout(mainCanvasTitleRowLayout);
+	mainCanvasLayout->setContentsMargins(0, 0, 0, 0);
+	mainCanvasLayout->setSpacing(6); // between outputs on main canvas
 
 	// We store the actual outputs here
 	mainCanvasOutputLayout = new QVBoxLayout;
-	mainCanvasOutputLayout->setSpacing(4); // between outputs on main canvas
+	mainCanvasOutputLayout->setContentsMargins(0, 0, 0, 0);
+	mainCanvasOutputLayout->setSpacing(6); // between outputs on main canvas
 
 	auto mainStreamGroup = new QGroupBox;
 	mainStreamGroup->setStyleSheet(outputGroupStyle);
 
 	auto mainStreamLayout = new QVBoxLayout;
+	mainStreamLayout->setContentsMargins(10, 8, 10, 8);
+	mainStreamLayout->setSpacing(0);
 
 	auto l2 = new QHBoxLayout;
+	l2->setContentsMargins(0, 0, 0, 0);
+	l2->setSpacing(10);
 
 	// Label for built in stream
 	auto bisHeaderLabel = new QLabel(QString::fromUtf8(obs_module_text("BuiltinStream")));
@@ -255,18 +276,19 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	scrollArea->setLineWidth(0);
 	scrollArea->setFrameShape(QFrame::NoFrame);
 	scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	scrollArea->setStyleSheet(QString::fromUtf8("QScrollArea { background: transparent; border: none; }"));
 	mainLayout->addWidget(scrollArea, 1);
 
 	authStatusLabel = new QLabel;
 	authStatusLabel->setWordWrap(true);
 	authStatusLabel->setTextFormat(Qt::RichText);
 	authStatusLabel->setOpenExternalLinks(true);
-	authStatusLabel->setContentsMargins(8, 8, 8, 0);
+	authStatusLabel->setContentsMargins(0, 0, 0, 0);
 	mainLayout->addWidget(authStatusLabel);
 
 	// Bottom Button Row
 	auto buttonRow = new QHBoxLayout;
-	buttonRow->setContentsMargins(8, 6, 8, 4);
+	buttonRow->setContentsMargins(0, 0, 0, 0);
 	buttonRow->setSpacing(8);
 
 	// Config Button
@@ -276,6 +298,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	configButton->setProperty("class", "icon-gear");
 	configButton->setFlat(true);
 	configButton->setAutoDefault(false);
+	configButton->setStyleSheet(bottomButtonStyle);
 	//configButton->setSizePolicy(sp2);
 	configButton->setToolTip(QString::fromUtf8(obs_module_text("MultiCastSettings")));
 	QPushButton::connect(configButton, &QPushButton::clicked, [this] {
@@ -309,7 +332,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	auto contributeButton = new QPushButton;
 	contributeButton->setMinimumHeight(30);
 	contributeButton->setText(QString::fromUtf8("BOOSTY"));
-	contributeButton->setStyleSheet(QString::fromUtf8("font-weight: 800; color: #ff7a00;"));
+	contributeButton->setStyleSheet(bottomBoostyStyle);
 	contributeButton->setToolTip(QString::fromUtf8("Boosty"));
 	QPushButton::connect(contributeButton, &QPushButton::clicked,
 			     [] { QDesktopServices::openUrl(QUrl("https://boosty.to/dorriankarnett")); });
@@ -319,7 +342,7 @@ MultistreamDock::MultistreamDock(QWidget *parent) : QFrame(parent)
 	auto dkstudioButton = new QPushButton;
 	dkstudioButton->setMinimumHeight(30);
 	dkstudioButton->setText(QString::fromUtf8("TELEGRAM"));
-	dkstudioButton->setStyleSheet(QString::fromUtf8("font-weight: 700; color: #2aabee;"));
+	dkstudioButton->setStyleSheet(bottomTelegramStyle);
 	dkstudioButton->setToolTip(QString::fromUtf8("Telegram"));
 	QPushButton::connect(dkstudioButton, &QPushButton::clicked, [] { QDesktopServices::openUrl(QUrl("https://t.me/dkstudio_dev")); });
 	buttonRow->addWidget(dkstudioButton);
@@ -590,13 +613,22 @@ void MultistreamDock::LoadOutput(obs_data_t *output_data, bool vertical)
 		std::get<QPushButton *>(*it) = streamButton;
 	}
 	auto streamGroup = new QGroupBox;
-	streamGroup->setStyleSheet(outputGroupStyle);
 	streamGroup->setObjectName(name);
+	auto endpoint = QString::fromUtf8(obs_data_get_string(output_data, "stream_server"));
+	const auto accentColor = ConfigUtils::getPlatformAccentColor(endpoint);
+	streamGroup->setStyleSheet(QString::fromUtf8(
+					   "QGroupBox { background-color: #171B25; border: 1px solid #2B3141; "
+					   "border-left: 4px solid %1; border-radius: 12px; padding: 0px; margin: 0px; }"
+					   "QGroupBox:hover { border-color: #46516B; border-left-color: %1; }")
+					   .arg(accentColor));
 	auto streamLayout = new QVBoxLayout;
+	streamLayout->setContentsMargins(10, 8, 10, 8);
+	streamLayout->setSpacing(0);
 
 	auto l2 = new QHBoxLayout;
+	l2->setContentsMargins(0, 0, 0, 0);
+	l2->setSpacing(10);
 
-	auto endpoint = QString::fromUtf8(obs_data_get_string(output_data, "stream_server"));
 	auto platformIconLabel = new QLabel;
 	auto platformIcon = ConfigUtils::getPlatformIconFromEndpoint(endpoint);
 
@@ -604,7 +636,9 @@ void MultistreamDock::LoadOutput(obs_data_t *output_data, bool vertical)
 
 	l2->addWidget(platformIconLabel);
 
-	l2->addWidget(new QLabel(name), 1);
+	auto outputNameLabel = new QLabel(name);
+	outputNameLabel->setStyleSheet(outputTitleStyle);
+	l2->addWidget(outputNameLabel, 1);
 
 	streamButton->setMinimumHeight(30);
 	streamButton->setObjectName(QStringLiteral("canvasStream"));
@@ -1190,16 +1224,19 @@ void MultistreamDock::ApplyAuthState(bool reachable, bool authorized, const QStr
 	QString labelStyle;
 	if (authorized) {
 		labelText = QString::fromUtf8(
-			"<span style='color:#16a34a;'><strong>DKStudio подключен.</strong> MultiCast разблокирован.</span>");
-		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(22,163,74,0.12);");
+			"<span style='color:#16a34a;'><strong>DKStudio подключен.</strong> MultiCast готов к работе.</span>");
+		labelStyle = QString::fromUtf8(
+			"padding: 10px 12px; border-radius: 10px; background-color: #152A21; border: 1px solid #1F7A4D;");
 	} else if (reachable) {
 		labelText = QString::fromUtf8(
-			"<span style='color:#f59e0b;'><strong>DKStudio найден.</strong> Войдите в аккаунт, чтобы разблокировать MultiCast.</span>");
-		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(245,158,11,0.12);");
+			"<span style='color:#f59e0b;'><strong>DKStudio найден.</strong> Войдите в аккаунт.</span>");
+		labelStyle = QString::fromUtf8(
+			"padding: 10px 12px; border-radius: 10px; background-color: #332716; border: 1px solid #8A5A16;");
 	} else {
 		labelText = QString::fromUtf8(
 			"<span style='color:#ef4444;'><strong>DKStudio не запущен.</strong> Откройте программу, чтобы использовать MultiCast.</span>");
-		labelStyle = QString::fromUtf8("padding: 8px 10px; border-radius: 8px; background: rgba(239,68,68,0.12);");
+		labelStyle = QString::fromUtf8(
+			"padding: 10px 12px; border-radius: 10px; background-color: #3A2028; border: 1px solid #71313E;");
 	}
 
 	authStatusLabel->setStyleSheet(labelStyle);

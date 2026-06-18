@@ -47,10 +47,69 @@ QToolButton *ConfigUtils::generateMenuButton(QString title, QIcon icon)
 	button->setIcon(icon);
 	button->setIconSize(QSize(32, 32));
 	button->setToolButtonStyle(Qt::ToolButtonTextUnderIcon);
-		button->setStyleSheet(
-		"min-width: 128px; max-width: 128px; min-height: 102px; max-height: 102px; padding: 12px 8px 8px 8px; font-weight: bold;");
+	button->setStyleSheet(serviceTileStyle());
 
 	return button;
+}
+
+QString ConfigUtils::dialogStyle()
+{
+	return QString::fromUtf8(
+		"QDialog { background-color: #16181F; color: #F3F5F8; }"
+		"QLabel { color: #F3F5F8; }"
+		"QScrollArea, QWidget { color: #F3F5F8; }"
+		"QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {"
+		" background-color: #232938; border: 1px solid #31384B; border-radius: 8px; padding: 6px 10px; color: #F3F5F8; }"
+		"QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QPlainTextEdit:focus, QTextEdit:focus { border: 1px solid #E68A2E; }"
+		"QPushButton { background-color: #2A3142; color: #F3F5F8; border: 1px solid #394156; border-radius: 8px; padding: 8px 14px; }"
+		"QPushButton:hover { background-color: #31394D; }"
+		"QTabBar::tab { background: #232938; color: #F3F5F8; border: 1px solid #394156; padding: 10px 14px; }"
+		"QTabBar::tab:selected { background: #2E3649; border-bottom-color: #2E3649; }");
+}
+
+QString ConfigUtils::panelStyle(const QString &accentColor)
+{
+	const auto borderColor = accentColor.isEmpty() ? QString::fromUtf8("#31384B") : accentColor;
+	return QString::fromUtf8("background-color: #1D212B; border: 1px solid %1; border-radius: 14px;")
+		.arg(borderColor);
+}
+
+QString ConfigUtils::primaryButtonStyle()
+{
+	return QString::fromUtf8(
+		"QPushButton { background-color: #E68A2E; color: #151821; border: 1px solid #E68A2E; border-radius: 8px; padding: 8px 14px; font-weight: bold; }"
+		"QPushButton:hover { background-color: #F09A3F; border-color: #F09A3F; }");
+}
+
+QString ConfigUtils::secondaryButtonStyle()
+{
+	return QString::fromUtf8(
+		"QPushButton { background-color: #2A3142; color: #F3F5F8; border: 1px solid #394156; border-radius: 8px; padding: 8px 14px; font-weight: bold; }"
+		"QPushButton:hover { background-color: #31394D; border-color: #4A546D; }");
+}
+
+QString ConfigUtils::dangerButtonStyle()
+{
+	return QString::fromUtf8(
+		"QPushButton { background-color: #2A2428; color: #FFD7D7; border: 1px solid #6A4147; border-radius: 8px; padding: 8px 14px; font-weight: bold; }"
+		"QPushButton:hover { background-color: #382A30; border-color: #8D505A; }");
+}
+
+QString ConfigUtils::sidebarStyle()
+{
+	return QString::fromUtf8(
+		"QListWidget { background-color: #1D212B; border: 1px solid #31384B; border-radius: 14px; padding: 10px 8px; outline: none; }"
+		"QListWidget::item { background-color: transparent; border-radius: 10px; padding: 10px 12px; margin: 2px 0px; }"
+		"QListWidget::item:selected { background-color: #2C3650; border-left: 3px solid #E68A2E; padding-left: 9px; }"
+		"QListWidget::item:hover:!selected { background-color: #252B39; }");
+}
+
+QString ConfigUtils::serviceTileStyle()
+{
+	return QString::fromUtf8(
+		"QToolButton { min-width: 126px; max-width: 126px; min-height: 92px; max-height: 92px; "
+		"background-color: #232938; border: 1px solid #31384B; border-radius: 14px; padding: 10px 8px 8px 8px; font-weight: bold; }"
+		"QToolButton:hover { background-color: #2A3142; border-color: #E68A2E; }");
 }
 
 // Generate QIcon from emoji
@@ -99,4 +158,28 @@ QIcon ConfigUtils::getPlatformIconFromEndpoint(QString endpoint)
 	} else { // unknown
 		return QIcon(":/multicast/media/unknown.png");
 	}
+}
+
+QString ConfigUtils::getPlatformAccentColor(QString endpoint)
+{
+	if (endpoint.contains(QString::fromUtf8("ingest.global-contribute.live-video.net")) ||
+	    endpoint.contains(QString::fromUtf8(".contribute.live-video.net")) ||
+	    endpoint.contains(QString::fromUtf8(".twitch.tv"))) {
+		return QString::fromUtf8("#9147FF");
+	} else if (endpoint.contains(QString::fromUtf8(".youtube.com"))) {
+		return QString::fromUtf8("#FF3B30");
+	} else if (endpoint.contains(QString::fromUtf8("fa723fc1b171.global-contribute.live-video.net"))) {
+		return QString::fromUtf8("#53FC18");
+	} else if (endpoint.contains(QString::fromUtf8(".tiktokcdn"))) {
+		return QString::fromUtf8("#25F4EE");
+	} else if (endpoint.contains(QString::fromUtf8(".pscp.tv"))) {
+		return QString::fromUtf8("#7AA2FF");
+	} else if (endpoint.contains(QString::fromUtf8("livepush.trovo.live"))) {
+		return QString::fromUtf8("#3FD26A");
+	} else if (endpoint.contains(QString::fromUtf8(".facebook.com")) ||
+		   endpoint.contains(QString::fromUtf8(".fbcdn.net"))) {
+		return QString::fromUtf8("#1877F2");
+	}
+
+	return QString::fromUtf8("#E68A2E");
 }
